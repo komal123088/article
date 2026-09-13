@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useAuth } from "@/lib/useAuth";
 import { CATEGORIES } from "@/lib/categories";
+import { compressImage } from "@/lib/imageUtils";
 import { ImagePlus, Loader2, ShieldAlert } from "lucide-react";
 
 function fileToBase64(file: File): Promise<string> {
@@ -37,8 +38,12 @@ export default function AdminNewArticlePage() {
     return (
       <div className="mx-auto max-w-md px-4 py-20 text-center">
         <ShieldAlert className="mx-auto text-accent mb-3" size={32} />
-        <h1 className="font-serif-display text-2xl font-bold mb-2">Admin access only</h1>
-        <p className="text-muted">You need an admin account to view this page.</p>
+        <h1 className="font-serif-display text-2xl font-bold mb-2">
+          Admin access only
+        </h1>
+        <p className="text-muted">
+          You need an admin account to view this page.
+        </p>
       </div>
     );
   }
@@ -47,7 +52,8 @@ export default function AdminNewArticlePage() {
     const file = e.target.files?.[0];
     if (!file) return;
     setImageFile(file);
-    setImagePreview(await fileToBase64(file));
+    const compressed = await compressImage(file);
+    setImagePreview(compressed);
   }
 
   async function handleSubmit(e: React.FormEvent) {
@@ -63,15 +69,15 @@ export default function AdminNewArticlePage() {
 
     try {
       let coverImage = "";
-      if (imageFile) {
-        const base64 = await fileToBase64(imageFile);
+      if (imagePreview) {
         const uploadRes = await fetch("/api/upload", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ image: base64 }),
+          body: JSON.stringify({ image: imagePreview }),
         });
         const uploadData = await uploadRes.json();
-        if (!uploadRes.ok) throw new Error(uploadData.error || "Image upload failed.");
+        if (!uploadRes.ok)
+          throw new Error(uploadData.error || "Image upload failed.");
         coverImage = uploadData.url;
       }
 
@@ -81,7 +87,8 @@ export default function AdminNewArticlePage() {
         body: JSON.stringify({ ...form, coverImage, status: "published" }),
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "The article could not be saved.");
+      if (!res.ok)
+        throw new Error(data.error || "The article could not be saved.");
 
       router.push(`/article/${data.article.slug}`);
       router.refresh();
@@ -94,10 +101,15 @@ export default function AdminNewArticlePage() {
 
   return (
     <div className="mx-auto max-w-2xl px-4 py-10">
-      <Link href="/admin/articles" className="text-sm text-accent mb-4 inline-block">
+      <Link
+        href="/admin/articles"
+        className="text-sm text-accent mb-4 inline-block"
+      >
         &larr; Back to articles
       </Link>
-      <h1 className="font-serif-display text-2xl font-bold mb-1">Add new article</h1>
+      <h1 className="font-serif-display text-2xl font-bold mb-1">
+        Add new article
+      </h1>
       <p className="text-muted text-sm mb-6">
         This article will be published immediately.
       </p>
@@ -133,19 +145,32 @@ export default function AdminNewArticlePage() {
           <label className="flex flex-col items-center justify-center gap-2 border-2 border-dashed border-line rounded-lg p-6 cursor-pointer hover:border-accent transition-colors">
             {imagePreview ? (
               // eslint-disable-next-line @next/next/no-img-element
-              <img src={imagePreview} alt="Preview" className="max-h-48 object-contain" />
+              <img
+                src={imagePreview}
+                alt="Preview"
+                className="max-h-48 object-contain"
+              />
             ) : (
               <>
                 <ImagePlus className="text-muted" />
-                <span className="text-sm text-muted">Click to select an image</span>
+                <span className="text-sm text-muted">
+                  Click to select an image
+                </span>
               </>
             )}
-            <input type="file" accept="image/*" className="hidden" onChange={handleImageChange} />
+            <input
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={handleImageChange}
+            />
           </label>
         </div>
 
         <div>
-          <label className="block text-sm font-medium mb-1">Short excerpt</label>
+          <label className="block text-sm font-medium mb-1">
+            Short excerpt
+          </label>
           <textarea
             required
             rows={2}

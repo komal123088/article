@@ -5,16 +5,8 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useAuth } from "@/lib/useAuth";
 import { CATEGORIES } from "@/lib/categories";
+import { compressImage } from "@/lib/imageUtils";
 import { ImagePlus, Loader2 } from "lucide-react";
-
-function fileToBase64(file: File): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => resolve(reader.result as string);
-    reader.onerror = reject;
-    reader.readAsDataURL(file);
-  });
-}
 
 export default function NewArticlePage() {
   const router = useRouter();
@@ -26,8 +18,8 @@ export default function NewArticlePage() {
     content: "",
     category: CATEGORIES[0] as string,
   });
-  const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string>("");
+  const [imageError, setImageError] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
 
@@ -43,10 +35,16 @@ export default function NewArticlePage() {
           Create an account or sign in before submitting an article.
         </p>
         <div className="flex gap-3 justify-center">
-          <Link href="/login" className="bg-accent text-white px-5 py-2.5 rounded-lg font-medium">
+          <Link
+            href="/login"
+            className="bg-accent text-white px-5 py-2.5 rounded-lg font-medium"
+          >
             Sign in
           </Link>
-          <Link href="/register" className="border border-line px-5 py-2.5 rounded-lg font-medium">
+          <Link
+            href="/register"
+            className="border border-line px-5 py-2.5 rounded-lg font-medium"
+          >
             Sign up
           </Link>
         </div>
@@ -57,8 +55,15 @@ export default function NewArticlePage() {
   async function handleImageChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (!file) return;
-    setImageFile(file);
-    setImagePreview(await fileToBase64(file));
+    setImageError("");
+    try {
+      const compressed = await compressImage(file);
+      setImagePreview(compressed);
+    } catch {
+      setImageError(
+        "Could not process that image. Please try a different file.",
+      );
+    }
   }
 
   async function handleSubmit(e: React.FormEvent) {
@@ -75,15 +80,15 @@ export default function NewArticlePage() {
     try {
       let coverImage = "";
 
-      if (imageFile) {
-        const base64 = await fileToBase64(imageFile);
+      if (imagePreview) {
         const uploadRes = await fetch("/api/upload", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ image: base64 }),
+          body: JSON.stringify({ image: imagePreview }),
         });
         const uploadData = await uploadRes.json();
-        if (!uploadRes.ok) throw new Error(uploadData.error || "Image upload fail hua.");
+        if (!uploadRes.ok)
+          throw new Error(uploadData.error || "Image upload failed.");
         coverImage = uploadData.url;
       }
 
@@ -94,10 +99,10 @@ export default function NewArticlePage() {
       });
       const data = await res.json();
 
-      if (!res.ok) throw new Error(data.error || "The article could not be saved.");
+      if (!res.ok)
+        throw new Error(data.error || "The article could not be saved.");
 
-      router.push(`/article/${data.article.slug}`);
-      router.refresh();
+      router.push("/dashboard");
     } catch (err: any) {
       setError(err.message || "Something went wrong.");
     } finally {
@@ -107,9 +112,15 @@ export default function NewArticlePage() {
 
   return (
     <div className="mx-auto max-w-2xl px-4 py-10">
-      <h1 className="font-serif-display text-2xl font-bold mb-1">Write a new article</h1>
+      <Link href="/dashboard" className="text-sm text-accent mb-4 inline-block">
+        &larr; Back to your dashboard
+      </Link>
+      <h1 className="font-serif-display text-2xl font-bold mb-1">
+        Write a new article
+      </h1>
       <p className="text-muted text-sm mb-6">
-        Your article will be reviewed by an admin before it goes live on the site.
+        Your article will be reviewed by an admin before it goes live on the
+        site.
       </p>
 
       <form onSubmit={handleSubmit} className="space-y-5">
@@ -119,8 +130,8 @@ export default function NewArticlePage() {
             required
             value={form.title}
             onChange={(e) => setForm({ ...form, title: e.target.value })}
-            className="w-full border border-line rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-rust"
-            placeholder="Article ka title likhein"
+            className="w-full border border-line rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-accent"
+            placeholder="Write your article title"
           />
         </div>
 
@@ -129,7 +140,7 @@ export default function NewArticlePage() {
           <select
             value={form.category}
             onChange={(e) => setForm({ ...form, category: e.target.value })}
-            className="w-full border border-line rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-rust bg-white"
+            className="w-full border border-line rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-accent bg-white"
           >
             {CATEGORIES.map((c) => (
               <option key={c} value={c}>
@@ -144,26 +155,42 @@ export default function NewArticlePage() {
           <label className="flex flex-col items-center justify-center gap-2 border-2 border-dashed border-line rounded-lg p-6 cursor-pointer hover:border-accent transition-colors">
             {imagePreview ? (
               // eslint-disable-next-line @next/next/no-img-element
-              <img src={imagePreview} alt="Preview" className="max-h-48 object-contain" />
+              <img
+                src={imagePreview}
+                alt="Preview"
+                className="max-h-48 object-contain"
+              />
             ) : (
               <>
                 <ImagePlus className="text-muted" />
-                <span className="text-sm text-muted">Click to select an image</span>
+                <span className="text-sm text-muted">
+                  Click to select an image
+                </span>
               </>
             )}
-            <input type="file" accept="image/*" className="hidden" onChange={handleImageChange} />
+            <input
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={handleImageChange}
+            />
           </label>
+          {imageError && (
+            <p className="text-sm text-red-600 mt-1">{imageError}</p>
+          )}
         </div>
 
         <div>
-          <label className="block text-sm font-medium mb-1">Short excerpt</label>
+          <label className="block text-sm font-medium mb-1">
+            Short excerpt
+          </label>
           <textarea
             required
             rows={2}
             value={form.excerpt}
             onChange={(e) => setForm({ ...form, excerpt: e.target.value })}
-            className="w-full border border-line rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-rust"
-            placeholder="1-2 line ka short summary"
+            className="w-full border border-line rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-accent"
+            placeholder="1-2 line summary"
           />
         </div>
 
@@ -174,12 +201,12 @@ export default function NewArticlePage() {
             rows={10}
             value={form.content}
             onChange={(e) => setForm({ ...form, content: e.target.value })}
-            className="w-full border border-line rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-rust"
-            placeholder="Poora article yahan likhein"
+            className="w-full border border-line rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-accent"
+            placeholder="Write the full article here"
           />
         </div>
 
-        {error && <p className="text-sm text-accent-dark">{error}</p>}
+        {error && <p className="text-sm text-red-600">{error}</p>}
 
         <button
           type="submit"
@@ -187,7 +214,7 @@ export default function NewArticlePage() {
           className="flex items-center justify-center gap-2 w-full bg-accent hover:bg-accent-dark transition-colors text-white font-medium py-2.5 rounded-lg disabled:opacity-60"
         >
           {submitting && <Loader2 size={16} className="animate-spin" />}
-          {submitting ? "Publishing..." : "Publish article"}
+          {submitting ? "Publishing..." : "Submit article"}
         </button>
       </form>
     </div>

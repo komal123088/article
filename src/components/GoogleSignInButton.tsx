@@ -2,6 +2,7 @@
 
 import { useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
+import { useAuth } from "@/lib/useAuth";
 
 declare global {
   interface Window {
@@ -11,6 +12,7 @@ declare global {
 
 export default function GoogleSignInButton() {
   const router = useRouter();
+  const { setUser } = useAuth();
   const buttonRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -28,9 +30,10 @@ export default function GoogleSignInButton() {
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ credential: response.credential }),
           });
+          const data = await res.json();
           if (res.ok) {
-            router.push("/dashboard/new");
-            router.refresh();
+            setUser(data.user);
+            router.push("/dashboard");
           }
         },
       });
@@ -46,13 +49,19 @@ export default function GoogleSignInButton() {
     if (window.google) {
       initialize();
     } else {
+      const existing = document.getElementById("google-gsi-script");
+      if (existing) {
+        existing.addEventListener("load", initialize);
+        return;
+      }
       const script = document.createElement("script");
+      script.id = "google-gsi-script";
       script.src = "https://accounts.google.com/gsi/client";
       script.async = true;
       script.onload = initialize;
       document.body.appendChild(script);
     }
-  }, [router]);
+  }, [router, setUser]);
 
   if (!process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID) return null;
 

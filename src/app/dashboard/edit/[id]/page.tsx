@@ -6,18 +6,9 @@ import Link from "next/link";
 import { useAuth } from "@/lib/useAuth";
 import { CATEGORIES } from "@/lib/categories";
 import { compressImage } from "@/lib/imageUtils";
-import { ImagePlus, Loader2, ShieldAlert } from "lucide-react";
+import { ImagePlus, Loader2 } from "lucide-react";
 
-function fileToBase64(file: File): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => resolve(reader.result as string);
-    reader.onerror = reject;
-    reader.readAsDataURL(file);
-  });
-}
-
-export default function EditArticlePage() {
+export default function EditMyArticlePage() {
   const router = useRouter();
   const params = useParams();
   const id = params.id as string;
@@ -28,19 +19,21 @@ export default function EditArticlePage() {
     excerpt: "",
     content: "",
     category: CATEGORIES[0] as string,
-    status: "published",
   });
   const [coverImage, setCoverImage] = useState("");
-  const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState("");
   const [loadingArticle, setLoadingArticle] = useState(true);
+  const [notAllowed, setNotAllowed] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
 
   useEffect(() => {
-    if (user?.role !== "admin") return;
-    fetch(`/api/admin/articles/${id}`)
-      .then((res) => res.json())
+    if (!user) return;
+    fetch(`/api/articles/mine/${id}`)
+      .then((res) => {
+        if (!res.ok) setNotAllowed(true);
+        return res.json();
+      })
       .then((data) => {
         if (data.article) {
           setForm({
@@ -48,7 +41,6 @@ export default function EditArticlePage() {
             excerpt: data.article.excerpt,
             content: data.article.content,
             category: data.article.category,
-            status: data.article.status,
           });
           setCoverImage(data.article.coverImage || "");
         }
@@ -56,30 +48,43 @@ export default function EditArticlePage() {
       .finally(() => setLoadingArticle(false));
   }, [id, user]);
 
-  if (authLoading) return null;
+  if (authLoading || (user && loadingArticle)) return null;
 
-  if (!user || user.role !== "admin") {
+  if (!user) {
     return (
       <div className="mx-auto max-w-md px-4 py-20 text-center">
-        <ShieldAlert className="mx-auto text-accent mb-3" size={32} />
         <h1 className="font-serif-display text-2xl font-bold mb-2">
-          Admin access only
+          Sign in to continue
+        </h1>
+        <Link href="/login" className="text-accent font-medium">
+          Sign in
+        </Link>
+      </div>
+    );
+  }
+
+  if (notAllowed) {
+    return (
+      <div className="mx-auto max-w-md px-4 py-20 text-center">
+        <h1 className="font-serif-display text-2xl font-bold mb-2">
+          Not found
         </h1>
         <p className="text-muted">
-          You need an admin account to view this page.
+          This article doesn&apos;t exist or isn&apos;t yours to edit.
         </p>
       </div>
     );
   }
 
-  if (loadingArticle) return null;
-
   async function handleImageChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (!file) return;
-    setImageFile(file);
-    const compressed = await compressImage(file);
-    setImagePreview(compressed);
+    try {
+      const compressed = await compressImage(file);
+      setImagePreview(compressed);
+    } catch {
+      setError("Could not process that image. Please try a different file.");
+    }
   }
 
   async function handleSubmit(e: React.FormEvent) {
@@ -102,7 +107,7 @@ export default function EditArticlePage() {
         finalCoverImage = uploadData.url;
       }
 
-      const res = await fetch(`/api/admin/articles/${id}`, {
+      const res = await fetch(`/api/articles/mine/${id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ ...form, coverImage: finalCoverImage }),
@@ -111,8 +116,7 @@ export default function EditArticlePage() {
       if (!res.ok)
         throw new Error(data.error || "The article could not be updated.");
 
-      router.push("/admin/articles");
-      router.refresh();
+      router.push("/dashboard");
     } catch (err: any) {
       setError(err.message || "Something went wrong.");
     } finally {
@@ -122,15 +126,16 @@ export default function EditArticlePage() {
 
   return (
     <div className="mx-auto max-w-2xl px-4 py-10">
-      <Link
-        href="/admin/articles"
-        className="text-sm text-accent mb-4 inline-block"
-      >
-        &larr; Back to articles
+      <Link href="/dashboard" className="text-sm text-accent mb-4 inline-block">
+        &larr; Back to your dashboard
       </Link>
-      <h1 className="font-serif-display text-2xl font-bold mb-6">
+      <h1 className="font-serif-display text-2xl font-bold mb-1">
         Edit article
       </h1>
+      <p className="text-muted text-sm mb-6">
+        If this article was already published, editing it will send it back for
+        review.
+      </p>
 
       <form onSubmit={handleSubmit} className="space-y-5">
         <div>
@@ -143,32 +148,19 @@ export default function EditArticlePage() {
           />
         </div>
 
-        <div className="grid grid-cols-2 gap-4">
-          <div>
-            <label className="block text-sm font-medium mb-1">Category</label>
-            <select
-              value={form.category}
-              onChange={(e) => setForm({ ...form, category: e.target.value })}
-              className="w-full border border-line rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-accent bg-white"
-            >
-              {CATEGORIES.map((c) => (
-                <option key={c} value={c}>
-                  {c}
-                </option>
-              ))}
-            </select>
-          </div>
-          <div>
-            <label className="block text-sm font-medium mb-1">Status</label>
-            <select
-              value={form.status}
-              onChange={(e) => setForm({ ...form, status: e.target.value })}
-              className="w-full border border-line rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-accent bg-white"
-            >
-              <option value="published">Published</option>
-              <option value="pending">Pending</option>
-            </select>
-          </div>
+        <div>
+          <label className="block text-sm font-medium mb-1">Category</label>
+          <select
+            value={form.category}
+            onChange={(e) => setForm({ ...form, category: e.target.value })}
+            className="w-full border border-line rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-accent bg-white"
+          >
+            {CATEGORIES.map((c) => (
+              <option key={c} value={c}>
+                {c}
+              </option>
+            ))}
+          </select>
         </div>
 
         <div>

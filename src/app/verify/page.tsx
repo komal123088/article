@@ -2,9 +2,11 @@
 
 import { useState, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import { useAuth } from "@/lib/useAuth";
 
 function VerifyForm() {
   const router = useRouter();
+  const { setUser } = useAuth();
   const searchParams = useSearchParams();
   const email = searchParams.get("email") || "";
 
@@ -32,8 +34,8 @@ function VerifyForm() {
       return;
     }
 
-    router.push("/dashboard/new");
-    router.refresh();
+    setUser(data.user);
+    router.push("/dashboard");
   }
 
   async function handleResend() {
@@ -56,15 +58,19 @@ function VerifyForm() {
 
   return (
     <div className="mx-auto max-w-md px-4 py-16">
-      <h1 className="font-serif-display text-2xl font-bold mb-1">Verify your email</h1>
+      <h1 className="font-serif-display text-2xl font-bold mb-1">
+        Verify your email
+      </h1>
       <p className="text-muted text-sm mb-6">
-        We sent a 6-digit code to <span className="font-medium">{email}</span>. Enter it
-        below to activate your account.
+        We sent a 6-digit code to <span className="font-medium">{email}</span>.
+        Enter it below to activate your account.
       </p>
 
       <form onSubmit={handleVerify} className="space-y-4">
         <div>
-          <label className="block text-sm font-medium mb-1">Verification code</label>
+          <label className="block text-sm font-medium mb-1">
+            Verification code
+          </label>
           <input
             required
             maxLength={6}

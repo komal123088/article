@@ -4,9 +4,11 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import GoogleSignInButton from "@/components/GoogleSignInButton";
+import { useAuth } from "@/lib/useAuth";
 
 export default function LoginPage() {
   const router = useRouter();
+  const { setUser } = useAuth();
   const [form, setForm] = useState({ email: "", password: "" });
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
@@ -33,8 +35,8 @@ export default function LoginPage() {
       return;
     }
 
-    router.push("/dashboard/new");
-    router.refresh();
+    setUser(data.user);
+    router.push("/dashboard");
   }
 
   return (
