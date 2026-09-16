@@ -73,7 +73,7 @@ export default function Navbar({ categoryPreviews = {} }: Props) {
             Today<span className="text-accent">Magazine</span>
           </Link>
 
-          <nav className="hidden lg:flex items-center gap-6 text-sm font-medium">
+          <nav className="hidden lg:flex items-center gap-3 xl:gap-4 text-xs font-medium">
             {CATEGORIES.map((cat) => (
               <div
                 key={cat}

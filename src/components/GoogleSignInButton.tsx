@@ -33,7 +33,7 @@ export default function GoogleSignInButton() {
           const data = await res.json();
           if (res.ok) {
             setUser(data.user);
-            router.push("/dashboard");
+            router.push(data.user?.role === "admin" ? "/admin" : "/dashboard");
           }
         },
       });

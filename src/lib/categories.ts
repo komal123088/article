@@ -6,4 +6,7 @@ export const CATEGORIES = [
   "Environment",
   "Property",
   "Ecommerce",
+  "Fashion",
+  "Lifestyle",
+  "Health",
 ] as const;
