@@ -65,16 +65,22 @@ export default function AdminArticlesPage() {
     return (
       <div className="mx-auto max-w-md px-4 py-20 text-center">
         <ShieldAlert className="mx-auto text-accent mb-3" size={32} />
-        <h1 className="font-serif-display text-2xl font-bold mb-2">Admin access only</h1>
-        <p className="text-muted">You need an admin account to view this page.</p>
+        <h1 className="font-serif-display text-2xl font-bold mb-2">
+          Admin access only
+        </h1>
+        <p className="text-muted">
+          You need an admin account to view this page.
+        </p>
       </div>
     );
   }
 
   return (
-    <div className="mx-auto max-w-5xl px-4 py-10">
+    <div className="">
       <div className="flex items-center justify-between mb-6 flex-wrap gap-4">
-        <h1 className="font-serif-display text-2xl font-bold">Manage articles</h1>
+        <h1 className="font-serif-display text-2xl font-bold">
+          Manage articles
+        </h1>
         <Link
           href="/admin/articles/new"
           className="bg-accent hover:bg-accent-dark text-white text-sm font-medium px-4 py-2 rounded-full"
@@ -89,7 +95,9 @@ export default function AdminArticlesPage() {
             key={t}
             onClick={() => setTab(t)}
             className={`px-4 py-2 text-sm font-medium capitalize border-b-2 -mb-px transition-colors ${
-              tab === t ? "border-accent text-accent" : "border-transparent text-muted"
+              tab === t
+                ? "border-accent text-accent"
+                : "border-transparent text-muted"
             }`}
           >
             {t}
@@ -104,14 +112,19 @@ export default function AdminArticlesPage() {
       ) : (
         <div className="divide-y divide-line">
           {articles.map((a) => (
-            <div key={a._id} className="flex items-center justify-between gap-4 py-4">
+            <div
+              key={a._id}
+              className="flex items-center justify-between gap-4 py-4"
+            >
               <div className="min-w-0">
                 <p className="font-medium truncate">{a.title}</p>
                 <p className="text-xs text-muted mt-1">
                   {a.category} &middot; by {a.authorName} &middot;{" "}
                   <span
                     className={
-                      a.status === "published" ? "text-green-700" : "text-amber-700"
+                      a.status === "published"
+                        ? "text-green-700"
+                        : "text-amber-700"
                     }
                   >
                     {a.status}

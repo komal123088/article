@@ -100,7 +100,7 @@ export default function AdminNewArticlePage() {
   }
 
   return (
-    <div className="mx-auto max-w-2xl px-4 py-10">
+    <div className="max-w-2xl">
       <Link
         href="/admin/articles"
         className="text-sm text-accent mb-4 inline-block"

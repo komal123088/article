@@ -56,7 +56,7 @@ export default function Navbar({ categoryPreviews = {} }: Props) {
             </Link>
             {!loading && user?.role === "admin" && (
               <Link
-                href="/admin/articles"
+                href="/admin"
                 className="hover:text-accent flex items-center gap-1"
               >
                 <ShieldCheck size={12} /> Admin
@@ -208,10 +208,7 @@ export default function Navbar({ categoryPreviews = {} }: Props) {
               {user ? (
                 <div className="flex flex-col gap-3">
                   {user.role === "admin" && (
-                    <Link
-                      href="/admin/articles"
-                      className="text-accent font-semibold"
-                    >
+                    <Link href="/admin" className="text-accent font-semibold">
                       Admin dashboard
                     </Link>
                   )}
