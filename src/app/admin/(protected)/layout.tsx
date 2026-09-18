@@ -11,7 +11,7 @@ export default async function AdminLayout({
   const user = await getCurrentUser();
 
   if (!user) {
-    redirect("/login");
+    redirect("/admin/login");
   }
 
   if (user.role !== "admin") {
@@ -21,9 +21,12 @@ export default async function AdminLayout({
         <h1 className="font-serif-display text-2xl font-bold mb-2">
           Admin access only
         </h1>
-        <p className="text-muted">
+        <p className="text-muted mb-6">
           You need an admin account to view this page.
         </p>
+        <a href="/admin/login" className="text-accent font-medium">
+          Sign in as admin
+        </a>
       </div>
     );
   }
